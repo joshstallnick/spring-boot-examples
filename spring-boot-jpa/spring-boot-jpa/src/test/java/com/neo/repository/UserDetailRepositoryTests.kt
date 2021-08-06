@@ -1,59 +1,48 @@
-package com.neo.repository;
+package com.neo.repository
 
-import com.neo.model.Address;
-import com.neo.model.User;
-import com.neo.model.UserDetail;
-import com.neo.model.UserInfo;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
-import org.springframework.test.context.junit4.SpringRunner;
+import com.neo.model.Address
+import com.neo.model.UserDetail
+import org.junit.Test
+import org.junit.runner.RunWith
+import org.springframework.boot.test.context.SpringBootTest
+import org.springframework.test.context.junit4.SpringRunner
+import javax.annotation.Resource
 
-import javax.annotation.Resource;
-import java.text.DateFormat;
-import java.util.Date;
-import java.util.List;
-
-@RunWith(SpringRunner.class)
+@RunWith(SpringRunner::class)
 @SpringBootTest
-public class UserDetailRepositoryTests {
+class UserDetailRepositoryTests {
+    @Resource
+    private lateinit var addressRepository: AddressRepository
 
-	@Resource
-	private AddressRepository addressRepository;
-	@Resource
-	private UserDetailRepository userDetailRepository;
+    @Resource
+    private lateinit var userDetailRepository: UserDetailRepository
 
-	@Test
-	public void testSaveAddress() {
-		Address address=new Address();
-		address.setUserId(1L);
-		address.setCity("北京");
-		address.setProvince("北京");
-		address.setStreet("分钟寺");
-		addressRepository.save(address);
-	}
+    @Test
+    fun testSaveAddress() {
+        Address(
+            userId = 1L,
+            city = "北京",
+            province = "北京",
+            street = "分钟寺"
+        ).also(addressRepository::save)
+    }
 
-	@Test
-	public void testSaveUserDetail() {
-		Date date = new Date();
-		DateFormat dateFormat = DateFormat.getDateTimeInstance(DateFormat.LONG, DateFormat.LONG);
-		String formattedDate = dateFormat.format(date);
-		UserDetail userDetail=new UserDetail();
-		userDetail.setUserId(3L);
-		userDetail.setHobby("吃鸡游戏");
-		userDetail.setAge(28);
-		userDetail.setIntroduction("一个爱玩的人");
-		userDetailRepository.save(userDetail);
-	}
+    @Test
+    fun testSaveUserDetail() {
+        UserDetail(
+            userId = 3L,
+            hobby = "吃鸡游戏",
+            age = 28,
+            introduction = "一个爱玩的人"
+        ).also(userDetailRepository::save)
+    }
 
-	@Test
-	public void testUserInfo()  {
-		List<UserInfo> userInfos=userDetailRepository.findUserInfo("钓鱼");
-		for (UserInfo userInfo:userInfos){
-			System.out.println("userInfo: "+userInfo.getUserName()+"-"+userInfo.getEmail()+"-"+userInfo.getHobby()+"-"+userInfo.getIntroduction());
-		}
-	}
+    @Test
+    fun testUserInfo() {
+        userDetailRepository
+            .findUserInfo("钓鱼")
+            .asSequence()
+            .map { "userInfo: ${it.username}-${it.email}-${it.hobby}-${it.introduction}" }
+            .forEach(::println)
+    }
 }

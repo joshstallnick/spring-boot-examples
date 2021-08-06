@@ -1,7 +1,6 @@
-package com.neo.repository;
+package com.neo.repository
 
-import com.neo.model.Address;
-import org.springframework.data.jpa.repository.JpaRepository;
+import com.neo.model.Address
+import org.springframework.data.jpa.repository.JpaRepository
 
-public interface AddressRepository extends JpaRepository<Address, Long> {
-}
+interface AddressRepository : JpaRepository<Address, Long>

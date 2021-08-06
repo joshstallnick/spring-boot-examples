@@ -1,71 +1,81 @@
-package com.neo.repository;
+package com.neo.repository
 
-import com.neo.model.User;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
-import org.springframework.test.context.junit4.SpringRunner;
+import com.neo.model.User
+import org.junit.Test
+import org.junit.runner.RunWith
+import org.springframework.boot.test.context.SpringBootTest
+import org.springframework.data.domain.PageRequest
+import org.springframework.data.domain.Sort
+import org.springframework.test.context.junit4.SpringRunner
+import java.time.Instant
+import javax.annotation.Resource
 
-import javax.annotation.Resource;
-import java.text.DateFormat;
-import java.util.Date;
-
-@RunWith(SpringRunner.class)
+@RunWith(SpringRunner::class)
 @SpringBootTest
-public class UserRepositoryTests {
+class UserRepositoryTests {
+    @Resource
+    private lateinit var userRepository: UserRepository
 
-	@Resource
-    private UserRepository userRepository;
+    @Test
+    fun testSave() {
+        val date = Instant.now()
+        val dateString = date.toString()
 
-	@Test
-	public void testSave() {
-		Date date = new Date();
-		DateFormat dateFormat = DateFormat.getDateTimeInstance(DateFormat.LONG, DateFormat.LONG);
-		String formattedDate = dateFormat.format(date);
-		
-		userRepository.save(new User("aa", "aa123456","aa@126.com", "aa",  formattedDate));
-		userRepository.save(new User("bb", "bb123456","bb@126.com", "bb",  formattedDate));
-		userRepository.save(new User("cc", "cc123456","cc@126.com", "cc",  formattedDate));
+        sequenceOf("aa", "bb", "cc")
+            .map {
+                User(
+                    username = it,
+                    password = "${it}123456",
+                    email = "$it@126.com",
+                    nickname = it,
+                    regTime = dateString
+                )
+            }
+            .forEach(userRepository::save)
 
 //		Assert.assertEquals(3, userRepository.findAll().size());
 //		Assert.assertEquals("bb", userRepository.findByUserNameOrEmail("bb", "bb@126.com").getNickName());
 //		userRepository.delete(userRepository.findByUserName("aa"));
-	}
+    }
 
+    @Test
+    fun testBaseQuery() {
+        val date = Instant.now()
+        val dateString = date.toString()
 
-	@Test
-	public void testBaseQuery() {
-		Date date = new Date();
-		DateFormat dateFormat = DateFormat.getDateTimeInstance(DateFormat.LONG, DateFormat.LONG);
-		String formattedDate = dateFormat.format(date);
-		User user=new User("ff", "ff123456","ff@126.com", "ff",  formattedDate);
-		userRepository.findAll();
-		userRepository.findById(3L);
-		userRepository.save(user);
-		user.setId(2L);
-		userRepository.delete(user);
-		userRepository.count();
-		userRepository.existsById(3L);
-	}
+        val user = User(
+            username = "ff",
+            password = "ff123456",
+            email = "ff@126.com",
+            nickname = "ff",
+            regTime = dateString
+        )
 
-	@Test
-	public void testCustomSql() {
-		userRepository.modifyById("neo",3L);
-		userRepository.deleteById(3L);
-		userRepository.findByEmail("ff@126.com");
-	}
+        with(userRepository) {
+            findAll()
+            findById(3)
+            save(user)
+            user.id = 2
+            delete(user)
+            count()
+            existsById(3)
+        }
+    }
 
+    @Test
+    fun testCustomSql() {
+        with(userRepository) {
+            modifyById("neo", 3)
+            deleteById(3)
+            findByEmail("ff@126.com")
+        }
+    }
 
-	@Test
-	public void testPageQuery()  {
-		int page=1,size=2;
-		Sort sort = new Sort(Sort.Direction.DESC, "id");
-		Pageable pageable = PageRequest.of(page, size, sort);
-		userRepository.findALL(pageable);
-		userRepository.findByNickName("aa", pageable);
-	}
-
+    @Test
+    fun testPageQuery() {
+        Sort(Sort.Direction.DESC, "id")
+            .let { PageRequest.of(1, 2, it) }
+            .also(userRepository::findAll)
+            .also { userRepository.findByNickName("aa", it) }
+    }
 }

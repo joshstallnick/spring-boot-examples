@@ -1,48 +1,80 @@
-package com.neo.service;
+package com.neo.service
 
-import com.mysql.cj.util.StringUtils;
-import com.neo.model.UserDetail;
-import com.neo.param.UserDetailParam;
-import com.neo.repository.UserDetailRepository;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
-import org.springframework.stereotype.Service;
-
-import javax.annotation.Resource;
-import javax.persistence.criteria.Predicate;
-import java.util.ArrayList;
-import java.util.List;
+import com.neo.model.UserDetail
+import com.neo.param.UserDetailParam
+import com.neo.repository.UserDetailRepository
+import org.springframework.data.domain.Page
+import org.springframework.data.domain.Pageable
+import org.springframework.stereotype.Service
+import javax.persistence.criteria.CriteriaBuilder
+import javax.persistence.criteria.CriteriaQuery
+import javax.persistence.criteria.Predicate
+import javax.persistence.criteria.Root
 
 @Service
-public class UserDetailServiceImpl implements  UserDetailService{
+class UserDetailServiceImpl(private val userDetailRepository: UserDetailRepository) : UserDetailService {
+    override fun findByCondition(detailParam: UserDetailParam, pageable: Pageable): Page<UserDetail?> =
+        userDetailRepository.findAll(
+            { root: Root<UserDetail?>, query: CriteriaQuery<*>, cb: CriteriaBuilder ->
+                buildQuery(detailParam, root, query, cb)
+            }, pageable
+        )
 
-    @Resource
-    private UserDetailRepository userDetailRepository;
+    private fun buildQuery(
+        detailParam: UserDetailParam,
+        root: Root<UserDetail?>,
+        query: CriteriaQuery<*>,
+        builder: CriteriaBuilder
+    ): Predicate {
+        val predicates: MutableList<Predicate> = ArrayList()
 
-    @Override
-    public Page<UserDetail> findByCondition(UserDetailParam detailParam, Pageable pageable){
+        //equal 示例
+        detailParam
+            .introduction
+            .letNotBlank {
+                root
+                    .get<Any>("introduction")
+                    .let { path -> builder.equal(path, it) }
+                    .also(predicates::add)
+            }
 
-        return userDetailRepository.findAll((root, query, cb) -> {
-            List<Predicate> predicates = new ArrayList<Predicate>();
-            //equal 示例
-            if (!StringUtils.isNullOrEmpty(detailParam.getIntroduction())){
-                predicates.add(cb.equal(root.get("introduction"),detailParam.getIntroduction()));
+        //like 示例
+        detailParam
+            .realName
+            .letNotBlank {
+                root
+                    .get<String>("realName")
+                    .let { path -> builder.like(path, "%$it%") }
+                    .also(predicates::add)
             }
-            //like 示例
-            if (!StringUtils.isNullOrEmpty(detailParam.getRealName())){
-                predicates.add(cb.like(root.get("realName"),"%"+detailParam.getRealName()+"%"));
-            }
-            //between 示例
-            if (detailParam.getMinAge()!=null && detailParam.getMaxAge()!=null) {
-                Predicate agePredicate = cb.between(root.get("age"), detailParam.getMinAge(), detailParam.getMaxAge());
-                predicates.add(agePredicate);
-            }
-            //greaterThan 大于等于示例
-            if (detailParam.getMinAge()!=null){
-                predicates.add(cb.greaterThan(root.get("age"),detailParam.getMinAge()));
-            }
-            return query.where(predicates.toArray(new Predicate[predicates.size()])).getRestriction();
-        }, pageable);
 
+        //between 示例
+        listOf(detailParam.minAge, detailParam.maxAge).letNotNull {
+            root
+                .get<Int>("age")
+                .let { path -> builder.between(path, it.first(), it[1]) }
+                .also(predicates::add)
+        }
+
+        //greaterThan 大于等于示例
+        listOf(detailParam.minAge).letNotNull {
+            root
+                .get<Int>("age")
+                .let { path -> builder.greaterThan(path, it.first()) }
+                .also(predicates::add)
+        }
+
+        return query.where(*predicates.toTypedArray()).restriction
     }
+}
+
+fun <R> String?.letNotBlank(fn: (String) -> R): R? =
+    this?.let {
+        if (it.isNotBlank()) return fn(it)
+        null
+    }
+
+fun <R> List<Int?>.letNotNull(fn: (List<Int>) -> R): R? {
+    if (this.all { it != null }) return fn(this.filterNotNull())
+    return null
 }

@@ -1,8 +1,8 @@
-package com.neo.model;
+package com.neo.model
 
-public interface UserInfo {
-	String getUserName();
-	String getEmail();
-	String getHobby();
-	String getIntroduction();
+interface UserInfo {
+    val username: String?
+    val email: String?
+    val hobby: String?
+    val introduction: String?
 }
