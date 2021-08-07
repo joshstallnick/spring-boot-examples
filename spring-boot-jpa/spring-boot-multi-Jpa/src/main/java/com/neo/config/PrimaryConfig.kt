@@ -1,59 +1,57 @@
-package com.neo.config;
+package com.neo.config
 
-import java.util.Map;
-
-import javax.persistence.EntityManager;
-import javax.sql.DataSource;
-
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.boot.orm.jpa.EntityManagerFactoryBuilder;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Primary;
-import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
-import org.springframework.orm.jpa.JpaTransactionManager;
-import org.springframework.orm.jpa.LocalContainerEntityManagerFactoryBean;
-import org.springframework.transaction.PlatformTransactionManager;
-import org.springframework.transaction.annotation.EnableTransactionManagement;
+import org.springframework.beans.factory.annotation.Qualifier
+import org.springframework.boot.orm.jpa.EntityManagerFactoryBuilder
+import org.springframework.context.annotation.Bean
+import org.springframework.context.annotation.Configuration
+import org.springframework.context.annotation.Primary
+import org.springframework.data.jpa.repository.config.EnableJpaRepositories
+import org.springframework.orm.jpa.JpaTransactionManager
+import org.springframework.orm.jpa.LocalContainerEntityManagerFactoryBean
+import org.springframework.transaction.PlatformTransactionManager
+import org.springframework.transaction.annotation.EnableTransactionManagement
+import javax.persistence.EntityManager
+import javax.sql.DataSource
 
 @Configuration
 @EnableTransactionManagement
 @EnableJpaRepositories(
-		entityManagerFactoryRef="entityManagerFactoryPrimary",
-		transactionManagerRef="transactionManagerPrimary",
-		basePackages= { "com.neo.repository.test1" })//设置dao（repo）所在位置
-public class PrimaryConfig {
-
-    @Autowired
+    entityManagerFactoryRef = "entityManagerFactoryPrimary",
+    transactionManagerRef = "transactionManagerPrimary",
+    basePackages = ["com.neo.repository.test1"]
+) //设置dao（repo）所在位置
+open class PrimaryConfig(
     @Qualifier("primaryDataSource")
-    private DataSource primaryDataSource;
+    private val primaryDataSource: DataSource,
 
-    @Autowired
     @Qualifier("vendorProperties")
-    private Map<String, Object> vendorProperties;
-
-    @Bean(name = "entityManagerFactoryPrimary")
+    private val vendorProperties: Map<String, Any?>
+) {
+    @Bean(name = ["entityManagerFactoryPrimary"])
     @Primary
-    public LocalContainerEntityManagerFactoryBean entityManagerFactoryPrimary (EntityManagerFactoryBuilder builder) {
-        return builder
-                .dataSource(primaryDataSource)
-                .properties(vendorProperties)
-                .packages("com.neo.model") //设置实体类所在位置
-                .persistenceUnit("primaryPersistenceUnit")
-                .build();
-    }
+    open fun entityManagerFactoryPrimary(
+        builder: EntityManagerFactoryBuilder
+    ): LocalContainerEntityManagerFactoryBean =
+        builder
+            .dataSource(primaryDataSource)
+            .properties(vendorProperties)
+            .packages("com.neo.model") //设置实体类所在位置
+            .persistenceUnit("primaryPersistenceUnit")
+            .build()
 
-    @Bean(name = "entityManagerPrimary")
+    @Bean(name = ["entityManagerPrimary"])
     @Primary
-    public EntityManager entityManager(EntityManagerFactoryBuilder builder) {
-        return entityManagerFactoryPrimary(builder).getObject().createEntityManager();
-    }
+    open fun entityManager(builder: EntityManagerFactoryBuilder): EntityManager =
+        entityManagerFactoryPrimary(builder)
+            .getObject()
+            ?.createEntityManager()
+            ?: throw Exception("Missing entity manager factory builder object")
 
-    @Bean(name = "transactionManagerPrimary")
+    @Bean(name = ["transactionManagerPrimary"])
     @Primary
-    PlatformTransactionManager transactionManagerPrimary(EntityManagerFactoryBuilder builder) {
-        return new JpaTransactionManager(entityManagerFactoryPrimary(builder).getObject());
-    }
-
+    open fun transactionManagerPrimary(builder: EntityManagerFactoryBuilder): PlatformTransactionManager =
+        entityManagerFactoryPrimary(builder)
+            .getObject()
+            ?.let(::JpaTransactionManager)
+            ?: throw Exception("Missing entity manager factory builder object")
 }

@@ -1,58 +1,86 @@
-package com.neo.repository;
+package com.neo.repository
 
-import com.neo.model.User;
-import com.neo.repository.test1.UserTest1Repository;
-import com.neo.repository.test2.UserTest2Repository;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.junit4.SpringRunner;
-import org.springframework.transaction.annotation.Transactional;
+import com.neo.model.User
+import org.junit.runner.RunWith
+import com.neo.repository.test1.UserTest1Repository
+import com.neo.repository.test2.UserTest2Repository
+import org.junit.Test
+import org.springframework.boot.test.context.SpringBootTest
+import org.springframework.test.context.junit4.SpringRunner
+import java.lang.Exception
+import java.text.DateFormat
+import java.time.Instant
+import java.time.LocalDate
+import java.util.*
+import javax.annotation.Resource
+import kotlin.Throws
 
-import javax.annotation.Resource;
-import java.text.DateFormat;
-import java.util.Date;
-
-@RunWith(SpringRunner.class)
+@RunWith(SpringRunner::class)
 @SpringBootTest
-public class UserRepositoryTests {
-	@Resource
-	private UserTest1Repository userTest1Repository;
-	@Resource
-	private UserTest2Repository userTest2Repository;
+class UserRepositoryTests {
+    @Resource
+    private lateinit var userTest1Repository: UserTest1Repository
 
-	@Test
-	public void testSave() throws Exception {
-		Date date = new Date();
-		DateFormat dateFormat = DateFormat.getDateTimeInstance(DateFormat.LONG, DateFormat.LONG);
-		String formattedDate = dateFormat.format(date);
+    @Resource
+    private lateinit var userTest2Repository: UserTest2Repository
 
-		userTest1Repository.save(new User("aa", "aa123456","aa@126.com", "aa",  formattedDate));
-		userTest1Repository.save(new User("bb", "bb123456","bb@126.com", "bb",  formattedDate));
-		userTest2Repository.save(new User("cc", "cc123456","cc@126.com", "cc",  formattedDate));
-	}
+    @Test
+    @Throws(Exception::class)
+    fun testSave() {
+        val date = Instant.now()
+        val dateString = date.toString()
 
+        val users: List<User> = sequenceOf("aa", "bb", "cc")
+            .map {
+                User(
+                    username = it,
+                    nickname = it,
+                    password = "${it}123456",
+                    email = "$it@126.com",
+                    regTime = dateString
+                )
+            }
+            .toList()
 
-	@Test
-	public void testDelete() throws Exception {
-		userTest1Repository.deleteAll();
-		userTest2Repository.deleteAll();
-	}
+        users.subList(0, 1).forEach(userTest1Repository::save)
 
-	@Test
-	public void testBaseQuery() {
-		Date date = new Date();
-		DateFormat dateFormat = DateFormat.getDateTimeInstance(DateFormat.LONG, DateFormat.LONG);
-		String formattedDate = dateFormat.format(date);
-		User user=new User("ff", "ff123456","ff@126.com", "ff",  formattedDate);
-		userTest1Repository.findAll();
-		userTest2Repository.findById(3l);
-		userTest2Repository.save(user);
-		user.setId(2l);
-		userTest1Repository.delete(user);
-		userTest1Repository.count();
-		userTest2Repository.findById(3l);
-	}
+        userTest2Repository.save(users.last())
+    }
 
+    @Test
+    @Throws(Exception::class)
+    fun testDelete() {
+        userTest1Repository.deleteAll()
+        userTest2Repository.deleteAll()
+    }
 
+    @Test
+    fun testBaseQuery() {
+        val date = Instant.now()
+        val dateString = date.toString()
+
+        val user = User(
+            username = "ff",
+            password = "ff123456",
+            email = "ff@126.com",
+            nickname = "ff",
+            regTime = dateString
+        )
+
+        with(userTest1Repository) {
+            findAll()
+            findById(3L)
+        }
+
+        userTest2Repository.save(user)
+
+        user.id = 2L
+
+        with(userTest1Repository) {
+            delete(user)
+            count()
+        }
+
+        userTest2Repository.findById(3L)
+    }
 }
